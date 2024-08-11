@@ -1,19 +1,25 @@
 import os
-
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Integer, JSON
+from sqlalchemy import Integer, String, Text
+import logging
 
 load_dotenv()
 
-POSTGRES_USER = os.getenv('POSTGRES_USER', 'postgres')
-POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD', 'postgres')
-POSTGRES_DB = os.getenv('POSTGRES_DB', 'postgres')
+logging.basicConfig(level=logging.INFO)
 
-PG_DSN = f'postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:5431/{POSTGRES_DB}'
+POSTGRES_USER = os.getenv('POSTGRES_USER')
+POSTGRES_PASSWORD = os.getenv('POSTGRES_PASSWORD')
+POSTGRES_DB = os.getenv('POSTGRES_DB')
+POSTGRES_HOST = os.getenv('POSTGRES_HOST', 'localhost')
+POSTGRES_PORT = os.getenv('POSTGRES_PORT', '5431')
 
-engine = create_async_engine(PG_DSN)
+PG_DSN = f'postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}'
+
+logging.info(f"Connecting to database: {PG_DSN}")
+
+engine = create_async_engine(PG_DSN, echo=True)
 Session = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 
@@ -25,10 +31,27 @@ class SwapiPeople(Base):
     __tablename__ = 'people'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    json: Mapped[dict] = mapped_column(JSON)
+    birth_year: Mapped[str] = mapped_column(String)
+    eye_color: Mapped[str] = mapped_column(String)
+    films: Mapped[str] = mapped_column(Text)
+    gender: Mapped[str] = mapped_column(String)
+    hair_color: Mapped[str] = mapped_column(String)
+    height: Mapped[str] = mapped_column(String)
+    homeworld: Mapped[str] = mapped_column(String)
+    mass: Mapped[str] = mapped_column(String)
+    name: Mapped[str] = mapped_column(String)
+    skin_color: Mapped[str] = mapped_column(String)
+    species: Mapped[str] = mapped_column(Text)
+    starships: Mapped[str] = mapped_column(Text)
+    vehicles: Mapped[str] = mapped_column(Text)
 
 
 async def init_orm():
-    async with engine.begin() as connection:
-        await connection.run_sync(Base.metadata.drop_all)
-        await connection.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as connection:
+            await connection.run_sync(Base.metadata.drop_all)
+            await connection.run_sync(Base.metadata.create_all)
+        logging.info("Database initialized successfully")
+    except Exception as e:
+        logging.error(f"Error initializing database: {e}")
+        raise

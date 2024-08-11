@@ -4,7 +4,7 @@ from more_itertools import chunked
 
 from models import init_orm, SwapiPeople, Session
 
-MAX_REQUEST = 10
+MAX_REQUEST = 5
 
 
 async def get_people(person_id, http_session):
